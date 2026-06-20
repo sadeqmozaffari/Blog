@@ -15,16 +15,23 @@ namespace Blog.Infrastructure.Repositories
 			_context = context;
 		}
 
-		public async Task<List<Post>> GetByCategoryIdAsync(int categoryId)
+		public async Task<List<Post>> GetAllAsync()
 		{
 			return await _context.Posts
+				.Include(x => x.Category)
+				.ToListAsync();
+		}
+
+		public async Task<List<Post>> GetByCategoryIdAsync(int categoryId)
+		{
+			return await _context.Posts.Include(C=>C.Category)
 				.Where(x => x.CategoryId == categoryId)
 				.ToListAsync();
 		}
 
 		public async Task<List<Post>> GetLatestAsync(int count)
 		{
-			return await _context.Posts
+			return await _context.Posts.Include(C=>C.Category)
 				.OrderByDescending(x => x.CreatedDate)
 				.Take(count)
 				.ToListAsync();
