@@ -1,106 +1,104 @@
-﻿//using Blog.Infrastructure.Contexts;
-//using Microsoft.Extensions.Configuration;
-//using System.Security.Claims;
-//using System.Text;
+﻿using Blog.Common;
+using Blog.Common.DTOs.Authentication;
+using Blog.Common.DTOs.User;
+using Blog.Domain.Entities;
+using Blog.Domain.Repositories;
+using Mapster;
+using MapsterMapper;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
-//namespace Blog.Application.Services.Authentication
-//{
-//    public class AuthService : IAuthService
-//    {
-//        private readonly ApplicationDbContext _db;
-//        private readonly IConfiguration _configuration;
-//        private readonly IMapper _mapper;
+namespace Blog.Application.Services.Authentication
+{
+	
 
-//        public AuthService(ApplicationDbContext db, IConfiguration configuration, IMapper mapper)
-//        {
-//            _db = db;
-//            _configuration = configuration;
-//            _mapper = mapper;
-//        }
+	public class AuthService : IAuthService
+	{
+		private readonly IUserRepository _userRepository;
+		private readonly IMapper _mapper;
+		private readonly IConfiguration _configuration;
 
+		public AuthService(
+			IUserRepository userRepository,
+			IMapper mapper,
+			IConfiguration configuration)
+		{
+			_userRepository = userRepository;
+			_mapper = mapper;
+			_configuration = configuration;
+		}
 
-//        public async Task<bool> IsEmailExistsAsync(string email)
-//        {
-//            return await _db.Users.AnyAsync(u => u.Email.ToLower() == email.ToLower());
-//        }
+		public async Task<ApiResponse<bool>> IsEmailExistsAsync(string email)
+		{
+			var exists = await _userRepository.GetByEmailAsync(email) != null;
 
-//        public async Task<LoginResponseDTO?> LoginAsync(LoginRequestDTO loginRequestDTO)
-//        {
-//            try
-//            {
+			return ApiResponse<bool>.Ok(exists, "Checked successfully");
+		}
 
-//                var user = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == loginRequestDTO.Email.ToLower());
+		public async Task<ApiResponse<UserDTO>> RegisterAsync(UserCreateDTO dto)
+		{
+			var exists = await _userRepository.GetByEmailAsync(dto.Email);
 
-//                if (user == null || user.Password != loginRequestDTO.Password)
-//                {
-//                    return null;
-//                }
+			if (exists != null)
+				return ApiResponse<UserDTO>.Conflict("Email already exists");
 
-//                //generate TOKEN
-//                var token = GenerateJwtToken(user);
-//                return new LoginResponseDTO
-//                {
-//                    UserDTO = _mapper.Map<UserDTO>(user),
-//                    Token = token
-//                };
-//            }
-//            catch (Exception ex)
-//            {
-//                // Handle any other unexpected errors
-//                throw new InvalidOperationException("An unexpected error occurred during user login", ex);
-//            }
-//        }
+			var user = dto.Adapt<User>();
 
-//        public async Task<UserDTO?> RegisterAsync(RegisterationRequestDTO registerationRequestDTO)
-//        {
-//            try
-//            {
-//                if (await IsEmailExistsAsync(registerationRequestDTO.Email))
-//                {
-//                    throw new InvalidOperationException($"User with email '{registerationRequestDTO.Email}' already exists");
-//                }
+			user.CreatedDate = DateTime.UtcNow;
+			user.Role ??= "User";
 
-//                User user = new()
-//                {
-//                    Email = registerationRequestDTO.Email,
-//                    Name = registerationRequestDTO.Name,
-//                    Password = registerationRequestDTO.Password,
-//                    Role = string.IsNullOrEmpty(registerationRequestDTO.Role) ? "Customer" : registerationRequestDTO.Role,
-//                    CreatedDate = DateTime.Now
-//                };
+			await _userRepository.AddAsync(user);
+			await _userRepository.SaveAsync();
 
-//                await _db.Users.AddAsync(user);
-//                await _db.SaveChangesAsync();
+			var result = _mapper.Map<UserDTO>(user);
 
-//                return _mapper.Map<UserDTO>(user);
-//            }
-//            catch (Exception ex)
-//            {
-//                // Handle any other unexpected errors
-//                throw new InvalidOperationException("An unexpected error occurred during user registration", ex);
-//            }
-//        }
+			return ApiResponse<UserDTO>.CreatedAt(result, "User registered successfully");
+		}
 
+		public async Task<ApiResponse<LoginResponseDTO>> LoginAsync(LoginRequestDTO dto)
+		{
+			var user = await _userRepository.GetByEmailAsync(dto.Email);
 
-//        private string GenerateJwtToken(User user)
-//        {
-//            var key = Encoding.ASCII.GetBytes(_configuration.GetSection("JwtSettings")["Secret"]);
+			if (user == null || user.Password != dto.Password)
+				return ApiResponse<LoginResponseDTO>.NotFound("Invalid email or password");
 
-//            var tokenDescriptor = new SecurityTokenDescriptor
-//            {
-//                Subject = new ClaimsIdentity(new[] {
-//                    new Claim(ClaimTypes.NameIdentifier,user.Id.ToString()),
-//                    new Claim(ClaimTypes.Email,user.Email),
-//                    new Claim(ClaimTypes.Name,user.Name),
-//                    new Claim(ClaimTypes.Role,user.Role),
-//                }),
-//                Expires = DateTime.UtcNow.AddDays(7),
-//                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-//            };
+			var token = GenerateJwtToken(user);
 
-//            var tokenHandler = new JwtSecurityTokenHandler();
-//            var token = tokenHandler.CreateToken(tokenDescriptor);
-//            return tokenHandler.WriteToken(token);
-//        }
-//    }
-//}
+			var response = new LoginResponseDTO
+			{
+				UserDTO = _mapper.Map<UserDTO>(user),
+				Token = token
+			};
+
+			return ApiResponse<LoginResponseDTO>.Ok(response, "Login successful");
+		}
+
+		private string GenerateJwtToken(User user)
+		{
+			var key = Encoding.UTF8.GetBytes(_configuration["JwtSettings:Secret"]!);
+
+			var tokenDescriptor = new SecurityTokenDescriptor
+			{
+				Subject = new ClaimsIdentity(new[]
+				{
+				new Claim(ClaimTypes.NameIdentifier,user.Id.ToString()),
+				new Claim(ClaimTypes.Email,user.Email),
+				new Claim(ClaimTypes.Name,user.Name),
+				new Claim(ClaimTypes.Role,user.Role)
+			}),
+				Expires = DateTime.UtcNow.AddDays(7),
+				SigningCredentials = new SigningCredentials(
+					new SymmetricSecurityKey(key),
+					SecurityAlgorithms.HmacSha256Signature)
+			};
+
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var token = tokenHandler.CreateToken(tokenDescriptor);
+
+			return tokenHandler.WriteToken(token);
+		}
+	}
+}

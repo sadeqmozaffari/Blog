@@ -23,4 +23,9 @@
     <ProjectReference Include="..\Blog.Infrastructure\Blog.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\v2\" />
+    <Folder Include="Controllers\v1\" />
+  </ItemGroup>
+
 </Project>

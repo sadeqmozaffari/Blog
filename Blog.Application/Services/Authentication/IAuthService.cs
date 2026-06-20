@@ -1,14 +1,13 @@
-﻿using Blog.Common.DTOs.Authentication;
+﻿using Blog.Common;
+using Blog.Common.DTOs.Authentication;
 using Blog.Common.DTOs.User;
 
 namespace Blog.Application.Services.Authentication
 {
     public interface IAuthService
     {
-        Task<UserDTO?> RegisterAsync(UserCreateDTO registerationRequestDTO);
-
-        Task<LoginResponseDTO?> LoginAsync(LoginRequestDTO loginRequestDTO);
-
-        Task<bool> IsEmailExistsAsync(string email);
-    }
+		Task<ApiResponse<UserDTO>> RegisterAsync(UserCreateDTO dto);
+		Task<ApiResponse<LoginResponseDTO>> LoginAsync(LoginRequestDTO dto);
+		Task<ApiResponse<bool>> IsEmailExistsAsync(string email);
+	}
 }
