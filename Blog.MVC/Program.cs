@@ -1,7 +1,48 @@
+using Blog.MVC;
+using Blog.MVC.Services;
+using Blog.MVC.Services.IServices;
+using Mapster;
+using MapsterMapper;
+using Microsoft.AspNetCore.Authentication.Cookies;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(option =>
+{
+	option.IdleTimeout = TimeSpan.FromMinutes(60);
+	option.Cookie.HttpOnly = true;
+	option.Cookie.IsEssential = true;
+});
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+	.AddCookie(options =>
+	{
+		options.Cookie.HttpOnly = true;
+		options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+		options.SlidingExpiration = true;
+		options.LoginPath = "/auth/login";
+		options.AccessDeniedPath = "/auth/accessdenied";
+	});
+builder.Services.AddHttpClient("BlogAPI", client =>
+{
+	var blogAPIUrl = builder.Configuration.GetValue<string>("ServiceUrls:BlogAPI");
+	client.BaseAddress = new Uri(blogAPIUrl);
+	client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
+builder.Services.AddScoped<IBaseService, BaseService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IPostService, PostService>();
+
+builder.Services.AddSingleton(TypeAdapterConfig.GlobalSettings);
+builder.Services.AddScoped<IMapper, Mapper>();
+MappingConfig.Register();
 
 var app = builder.Build();
 
@@ -15,7 +56,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
-
+app.UseSession();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
