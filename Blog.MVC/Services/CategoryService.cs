@@ -8,7 +8,7 @@ namespace Blog.MVC.Services
 	public class CategoryService : BaseService, ICategoryService
 	{
 
-		private const string APIEndpoint = "/api/category";
+		private const string APIEndpoint = "/api/v2/category";
 		public CategoryService(IHttpClientFactory httpClient, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
 			: base(httpClient, httpContextAccessor)
 		{

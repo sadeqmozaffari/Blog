@@ -1,4 +1,5 @@
-﻿using Blog.Application.Services.Category;
+﻿using Asp.Versioning;
+using Blog.Application.Services.Category;
 using Blog.Common;
 using Blog.Common.DTOs.Category;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Blog.API.Controllers
 {
 	[ApiController]
-	[Route("api/[controller]")]
+	[Route("api/v{version:apiVersion}/category")]
+	[ApiVersion("1.0")]
 	public class CategoryController : ControllerBase
 	{
 		private readonly ICategoryService _categoryService;

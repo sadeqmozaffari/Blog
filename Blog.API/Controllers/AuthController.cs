@@ -1,4 +1,5 @@
-﻿using Blog.Application.Services.Authentication;
+﻿using Asp.Versioning;
+using Blog.Application.Services.Authentication;
 using Blog.Common;
 using Blog.Common.DTOs.Authentication;
 using Blog.Common.DTOs.User;
@@ -8,6 +9,7 @@ namespace Blog.API.Controllers
 {
 	[ApiController]
 	[Route("api/auth")]
+	[ApiVersionNeutral]
 	public class AuthController : ControllerBase
 	{
 		private readonly IAuthService _authService;

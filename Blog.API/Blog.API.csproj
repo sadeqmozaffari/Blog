@@ -7,9 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.17" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="5.1.0" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.16" />
+	  <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.17" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.17">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -21,11 +22,6 @@
     <ProjectReference Include="..\Blog.Application\Blog.Application.csproj" />
     <ProjectReference Include="..\Blog.Common\Blog.Common.csproj" />
     <ProjectReference Include="..\Blog.Infrastructure\Blog.Infrastructure.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Controllers\v2\" />
-    <Folder Include="Controllers\v1\" />
   </ItemGroup>
 
 </Project>

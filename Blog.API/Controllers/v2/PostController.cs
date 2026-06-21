@@ -1,14 +1,16 @@
-﻿using Blog.Application.Services.Post;
+﻿using Asp.Versioning;
+using Blog.Application.Services.Post;
 using Blog.Common;
 using Blog.Common.DTOs.Post;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Blog.API.Controllers
+namespace Blog.API.Controllers.v2
 {
-	//[Authorize]
+	[Authorize]
 	[ApiController]
-	[Route("api/[controller]")]
+	[Route("api/v{version:apiVersion}/post")]
+	[ApiVersion("2.0")]
 	public class PostController : ControllerBase
 	{
 		private readonly IPostService _postService;

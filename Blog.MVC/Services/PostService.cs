@@ -8,7 +8,7 @@ namespace Blog.MVC.Services
     public class PostService : BaseService,IPostService
     {
         
-        private const string APIEndpoint = "/api/post";
+        private const string APIEndpoint = "/api/v2/post";
         public PostService(IHttpClientFactory httpClient, IConfiguration configuration, IHttpContextAccessor httpContextAccessor) 
             : base(httpClient,httpContextAccessor)
         {
