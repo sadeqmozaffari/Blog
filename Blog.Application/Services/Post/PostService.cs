@@ -1,4 +1,5 @@
-﻿using Blog.Common;
+﻿using Blog.Application.Services.Image;
+using Blog.Common;
 using Blog.Common.DTOs.Post;
 using Blog.Domain.Entities;
 using Blog.Domain.UnitOfWork;
@@ -11,11 +12,16 @@ namespace Blog.Application.Services.Post
 	{
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IMapper _mapper;
+		private readonly IImageService _imageService;
 
-		public PostService(IUnitOfWork unitOfWork, IMapper mapper)
+		public PostService(
+			IUnitOfWork unitOfWork,
+			IMapper mapper,
+			IImageService imageService)
 		{
 			_unitOfWork = unitOfWork;
 			_mapper = mapper;
+			_imageService = imageService;
 		}
 
 		public async Task<ApiResponse<List<PostDTO>>> GetAllAsync()
@@ -58,9 +64,21 @@ namespace Blog.Application.Services.Post
 			if (category == null)
 				return ApiResponse<PostDTO>.NotFound("Category not found");
 
-			var post = dto.Adapt<Domain.Entities.Post>();
+			string imageUrl = null;
 
-			post.CreatedDate = DateTime.UtcNow;
+			if (dto.ImageFile != null)
+			{
+				imageUrl = await _imageService.UploadImageAsync(dto.ImageFile);
+			}
+
+			var post = new Domain.Entities.Post
+			{
+				Title = dto.Title,
+				Description = dto.Description,
+				CategoryId = dto.CategoryId,
+				ImageUrl = imageUrl,
+				CreatedDate = DateTime.UtcNow
+			};
 
 			await _unitOfWork.Posts.AddAsync(post);
 			await _unitOfWork.SaveAsync();
@@ -78,9 +96,18 @@ namespace Blog.Application.Services.Post
 			if (post == null)
 				return ApiResponse<PostDTO>.NotFound("Post not found");
 
+			if (dto.ImageFile != null)
+			{
+				if (!string.IsNullOrEmpty(post.ImageUrl))
+				{
+					await _imageService.DeleteImageAsync(post.ImageUrl);
+				}
+
+				post.ImageUrl = await _imageService.UploadImageAsync(dto.ImageFile);
+			}
+
 			post.Title = dto.Title;
 			post.Description = dto.Description;
-			post.ImageUrl = dto.ImageUrl;
 			post.CategoryId = dto.CategoryId;
 			post.UpdatedDate = DateTime.UtcNow;
 
@@ -99,6 +126,11 @@ namespace Blog.Application.Services.Post
 
 			if (post == null)
 				return ApiResponse<object>.NotFound("Post not found");
+
+			if (!string.IsNullOrEmpty(post.ImageUrl))
+			{
+				await _imageService.DeleteImageAsync(post.ImageUrl);
+			}
 
 			_unitOfWork.Posts.Delete(post);
 			await _unitOfWork.SaveAsync();

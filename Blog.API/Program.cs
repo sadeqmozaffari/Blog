@@ -2,7 +2,9 @@ using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using Blog.Application.Services.Authentication;
 using Blog.Application.Services.Category;
+using Blog.Application.Services.Image;
 using Blog.Application.Services.Post;
+using Blog.Domain.Entities;
 using Blog.Domain.Repositories;
 using Blog.Domain.UnitOfWork;
 using Blog.Infrastructure.Contexts;
@@ -11,7 +13,9 @@ using Blog.Infrastructure.UnitOfWork;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
@@ -22,6 +26,7 @@ var builder = WebApplication.CreateBuilder(args);
 var key = Encoding.ASCII.GetBytes(builder.Configuration.GetSection("JwtSettings")["Secret"]);
 
 builder.Services.AddCors();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddAuthentication(option =>
 {
 	option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -134,6 +139,11 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPostRepository, PostRepository>();
 builder.Services.AddScoped<IPostService, PostService>();
+builder.Services.AddScoped<IImageService>(sp =>
+{
+	var env = sp.GetRequiredService<IWebHostEnvironment>();
+	return new ImageServcie(env.WebRootPath);
+});
 
 builder.Services.AddSingleton(TypeAdapterConfig.GlobalSettings);
 builder.Services.AddScoped<IMapper, Mapper>();
@@ -166,6 +176,7 @@ if (app.Environment.IsDevelopment())
 
 	});
 }
+app.UseStaticFiles();
 app.UseCors(o => o.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("*"));
 app.UseHttpsRedirection();
 app.UseAuthentication();

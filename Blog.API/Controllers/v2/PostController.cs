@@ -2,12 +2,11 @@
 using Blog.Application.Services.Post;
 using Blog.Common;
 using Blog.Common.DTOs.Post;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Blog.API.Controllers.v2
 {
-	[Authorize]
+	//[Authorize]
 	[ApiController]
 	[Route("api/v{version:apiVersion}/post")]
 	[ApiVersion("2.0")]
@@ -45,19 +44,21 @@ namespace Blog.API.Controllers.v2
 			return StatusCode(result.StatusCode, result);
 		}
 
+		[Consumes("multipart/form-data")]
 		[HttpPost]
 		[ProducesResponseType(typeof(ApiResponse<PostDTO>), StatusCodes.Status201Created)]
 		[ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-		public async Task<IActionResult> Create(PostCreateDTO dto)
+		public async Task<IActionResult> Create([FromForm]PostCreateDTO dto)
 		{
 			var result = await _postService.CreateAsync(dto);
 			return StatusCode(result.StatusCode, result);
 		}
 
+		[Consumes("multipart/form-data")]
 		[HttpPut("{id:int}")]
 		[ProducesResponseType(typeof(ApiResponse<PostDTO>), StatusCodes.Status200OK)]
 		[ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-		public async Task<IActionResult> Update(int id, PostUpdateDTO dto)
+		public async Task<IActionResult> Update(int id, [FromForm]PostUpdateDTO dto)
 		{
 			if (id != dto.Id)
 				return StatusCode(400, ApiResponse<object>.BadRequest("Id mismatch"));
