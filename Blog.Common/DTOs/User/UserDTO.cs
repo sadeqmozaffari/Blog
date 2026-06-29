@@ -1,15 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Blog.Common.DTOs.User
+﻿namespace Blog.Common.DTOs.User
 {
-    public class UserDTO
-    {
-        public int Id { get; set; }
+	public class UserDTO
+	{
+		public string Id { get; set; } = default!;
 
-        public string Email { get; set; } = default!;
+		public string Email { get; set; } = default!;
 
-        public string Name { get; set; } = default!;
+		public string Name { get; set; } = default!;
 
-        public string Role { get; set; } = default!;
-    }
+		public string Role { get; set; } = default!;
+	}
 }

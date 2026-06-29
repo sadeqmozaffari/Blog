@@ -1,285 +1,186 @@
-﻿@using Blog.Common.DTOs.Post
+﻿@using Blog.Common
+@using Blog.Common.DTOs.Post
 @model IEnumerable<PostDTO>
 
-<!-- Hero Section -->
 
+<!-- Hero Carousel Section -->
 <div id="heroCarousel" class="carousel slide carousel-fade mb-5" data-bs-ride="carousel">
-    <div class="carousel-inner">
-
-       
-        <div class="carousel-item active">
-            <div class="carousel-slide bg-primary-gradient">
-                <div class="carousel-caption-custom">
-                    <h1 class="display-3 fw-bold">Welcome to Our Blog</h1>
-                    <p class="lead fs-4">
-                        Discover insightful articles, tutorials, and inspiring stories.
-                    </p>
-                    <a href="#blog-posts" class="btn btn-light btn-lg">
-                        Explore Articles
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="carousel-item">
-            <div class="carousel-slide bg-danger-gradient">
-                <div class="carousel-caption-custom">
-                    <h1 class="display-3 fw-bold">Learn Something New Every Day</h1>
-                    <p class="lead fs-4">
-                        Stay updated with technology, lifestyle, and innovation.
-                    </p>
-                    <a href="#blog-posts" class="btn btn-light btn-lg">
-                        Read Latest Posts
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="carousel-item">
-            <div class="carousel-slide bg-info-gradient">
-                <div class="carousel-caption-custom">
-                    <h1 class="display-3 fw-bold">Share Ideas & Inspiration</h1>
-                    <p class="lead fs-4">
-                        Explore knowledge and experiences from talented writers.
-                    </p>
-                    <a href="#blog-posts" class="btn btn-light btn-lg">
-                        Start Reading
-                    </a>
-                </div>
-            </div>
-        </div>
-
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
     </div>
-
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <div class="carousel-slide" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="carousel-caption-custom">
+                    <h1 class="display-3 fw-bold mb-4 animate-fade-in">Welcome to Blog</h1>
+                    <p class="lead mb-4 fs-4">Read the latest posts and ideas</p>
+                    <a href="#post-listings" class="btn btn-light btn-lg px-5 smooth-scroll">
+                        <i class="bi bi-arrow-down-circle"></i> Explore Posts
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <div class="carousel-slide" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="carousel-caption-custom">
+                    <h1 class="display-3 fw-bold mb-4 animate-fade-in">Fresh Articles</h1>
+                    <p class="lead mb-4 fs-4">Browse stories organized by category</p>
+                    <a href="#post-listings" class="btn btn-light btn-lg px-5 smooth-scroll">
+                        <i class="bi bi-journal-text"></i> View Posts
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <div class="carousel-slide" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="carousel-caption-custom">
+                    <h1 class="display-3 fw-bold mb-4 animate-fade-in">Share Knowledge</h1>
+                    <p class="lead mb-4 fs-4">Manage posts from the admin dashboard</p>
+                    <a href="#post-listings" class="btn btn-light btn-lg px-5 smooth-scroll">
+                        <i class="bi bi-pencil-square"></i> Start Reading
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
     <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon"></span>
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
     </button>
-
     <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-        <span class="carousel-control-next-icon"></span>
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
     </button>
-   
-
 </div>
 
-<div class="container" id="blog-posts">
-
- 
-    <div class="text-center mb-5">
-        <h2 class="display-4 fw-bold text-primary">
-            <i class="bi bi-journal-richtext"></i>
-            Blog Collection
-        </h2>
-
-        <p class="lead text-muted">
-            Explore our latest articles, tutorials, and featured stories.
-        </p>
+<div class="container mt-4" id="post-listings">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="text-center">
+                <h2 class="display-4 fw-bold text-primary">
+                    <i class="bi bi-journal-text"></i> Latest Blog Posts
+                </h2>
+                <p class="lead text-muted">Browse the newest posts from the blog</p>
+                <div class="divider-custom">
+                    <div class="divider-line"></div>
+                    <div class="divider-icon"><i class="bi bi-bookmark-star"></i></div>
+                    <div class="divider-line"></div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    @if (TempData["error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
     @if (Model == null || !Model.Any())
     {
-        <div class="alert alert-info text-center p-5">
-            <i class="bi bi-info-circle-fill fs-1 d-block mb-3"></i>
-            <h4>No Posts Available</h4>
-            <p>There are currently no blog posts available.</p>
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info text-center" role="alert">
+                    <i class="bi bi-info-circle-fill fs-1 d-block mb-3"></i>
+                    <h4>No Posts Available</h4>
+                    <p class="mb-0">There are currently no posts to display. Please check back later.</p>
+                </div>
+            </div>
         </div>
     }
     else
     {
+        @if (Model.Count() > 0)
+        {
+            
+        
+        <!-- Post Cards Grid -->
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-
             @foreach (var post in Model)
             {
                 <div class="col">
-                    <div class="card h-100 shadow-sm blog-card">
+                    <div class="card h-100 shadow-sm hover-shadow transition">
+                        <!-- Post Image -->
+                        <div class="position-relative overflow-hidden">
+                            @if (!string.IsNullOrEmpty(post.ImageUrl))
+                            {
+                                <img src="@SD.GetImageUrl(post.ImageUrl)" class="card-img-top post-image" style="height: 250px; object-fit: cover;">
+                            }
+                            else
+                            {
+                                <div class="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center" style="height: 250px;">
+                                    <i class="bi bi-image text-white" style="font-size: 4rem;"></i>
+                                </div>
+                            }
 
-                        @if (!string.IsNullOrEmpty(post.ImageUrl))
-                        {
-                            <img src="@post.ImageUrl"
-                                 class="card-img-top blog-image">
-                        }
-                        else
-                        {
-                            <div class="card-img-top bg-gradient-primary d-flex justify-content-center align-items-center"
-                                 style="height:250px">
-                                <i class="bi bi-journal-richtext text-white display-1"></i>
-                            </div>
-                        }
-
-                    <div class="card-body">
-
-                        <span class="badge bg-primary mb-2">
-                            @post.CategoryName
-                        </span>
-
-                        <h5 class="card-title fw-bold">
-                            @post.Title
-                        </h5>
-
-                        <p class="card-text text-muted">
-                            @(string.IsNullOrWhiteSpace(post.Description)
-                                                    ? "No description available."
-                                                    : post.Description.Length > 120
-                                                    ? post.Description.Substring(0, 120) + "..."
-                                                    : post.Description)
-                    </p>
-
+                           
+                          
                         </div>
 
-                        <div class="card-footer bg-white border-0">
+                        <!-- Card Body -->
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title text-primary fw-bold mb-2">@post.Title</h5>
+                            <p class="text-muted small mb-3">
+                                @(string.IsNullOrWhiteSpace(post.CategoryName) ? "Uncategorized" : post.CategoryName)
+                            </p>
+                            <p class="card-text text-muted flex-grow-1">
+                                @(string.IsNullOrWhiteSpace(post.Description)
+                                    ? "No description available."
+                                    : post.Description.Length > 140 ? post.Description.Substring(0, 140) + "..." : post.Description)
+                            </p>
 
-                            <a asp-controller="Post"
-                               asp-action="Details"
-                               asp-route-id="@post.Id"
-                               class="btn btn-primary w-100">
+                          
 
-                                <i class="bi bi-book"></i>
-                                Read More
+                            <!-- Post Details -->
+                            <div class="mb-3">
+                                <div class="row g-2">
+                                 
+                                </div>
+                            </div>
 
-                            </a>
-
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2">
+                                <a href="mailto:hello@sadeqmozaffari@gmail.com?"
+                                class="btn btn-primary btn-hover">
+                                    <i class="bi bi-eye"></i> view
+                                </a>
+                            </div>
                         </div>
 
                     </div>
                 </div>
-                }
-
+            }
         </div>
-
-        <div class="row mt-5">
-            <div class="col-12">
-
-                <div class="card shadow-lg border-0 stats-card">
-
-                    <div class="card-body">
-
-                        <h3 class="text-center mb-4">
-                            Blog Statistics
-                        </h3>
-
-                        <div class="row text-center">
-
-                            <div class="col-md-4">
-                                <i class="bi bi-file-earmark-text-fill text-primary display-4"></i>
-                                <h2>@Model.Count()</h2>
-                                <p>Total Posts</p>
+            <!-- Statistics Section -->
+            <div class="row mt-5 mb-5">
+                <div class="col-12">
+                    <div class="card shadow-lg border-0 stats-card">
+                        <div class="card-body p-4">
+                            <h3 class="text-center mb-4 fw-bold">At a Glance</h3>
+                            <div class="row text-center g-4">
+                                <div class="col-md-12">
+                                    <div class="stat-item">
+                                        <i class="bi bi-journal-text text-primary fs-1 mb-3"></i>
+                                        <h3 class="text-primary fw-bold mb-1">@Model.Count()</h3>
+                                        <p class="text-muted mb-0">Total Posts</p>
+                                    </div>
+                                </div>
+                            
                             </div>
-
-                            <div class="col-md-4">
-                                <i class="bi bi-tags-fill text-success display-4"></i>
-                                <h2>@Model.Select(x => x.CategoryName).Distinct().Count()</h2>
-                                <p>Categories</p>
-                            </div>
-
-                            <div class="col-md-4">
-                                <i class="bi bi-journal-check text-danger display-4"></i>
-                                <h2>@Model.Count()</h2>
-                                <p>Published Articles</p>
-                            </div>
-
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
-        </div>
+        }
     }
+   
     
-
 </div>
-
-<style>
-
-    body {
-        background: #f8fafc;
-    }
-
-    .carousel-slide {
-        height: 500px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        color: white;
-    }
-
-    .bg-primary-gradient {
-        background: linear-gradient(135deg,#667eea,#764ba2);
-    }
-
-    .bg-danger-gradient {
-        background: linear-gradient(135deg,#f093fb,#f5576c);
-    }
-
-    .bg-info-gradient {
-        background: linear-gradient(135deg,#4facfe,#00f2fe);
-    }
-
-    .carousel-caption-custom {
-        animation: fadeInUp .8s ease;
-    }
-
-    @@keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(25px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .blog-card {
-        border: none;
-        border-radius: 16px;
-        overflow: hidden;
-        transition: .3s;
-    }
-
-        .blog-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 1rem 3rem rgba(0,0,0,.15) !important;
-        }
-
-    .blog-image {
-        height: 250px;
-        object-fit: cover;
-        transition: .4s;
-    }
-
-    .blog-card:hover .blog-image {
-        transform: scale(1.05);
-    }
-
-    .card-title {
-        min-height: 60px;
-    }
-
-    .card-text {
-        min-height: 80px;
-    }
-
-    .stats-card {
-        border-radius: 20px;
-        background: linear-gradient(135deg,#ffffff,#f1f5f9);
-    }
-
-    @@media(max-width:768px) {
-
-        .carousel-slide {
-            height: 350px;
-        }
-
-        .carousel-caption-custom h1 {
-            font-size: 2rem;
-        }
-    }
-</style>
-
 
 <!-- Custom Styles -->
 <style>
@@ -351,11 +252,11 @@
         box-shadow: 0 1.5rem 4rem rgba(0,0,0,.2) !important;
     }
 
-    .villa-image {
+    .post-image {
         transition: transform 0.5s ease-in-out;
     }
 
-    .card:hover .villa-image {
+    .card:hover .post-image {
         transform: scale(1.1);
     }
 

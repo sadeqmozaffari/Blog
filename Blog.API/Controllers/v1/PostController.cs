@@ -5,9 +5,8 @@ using Blog.Common.DTOs.Post;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Blog.API.Controllers
+namespace Blog.API.Controllers.v1
 {
-	[Authorize]
 	[ApiController]
 	[Route("api/v{version:apiVersion}/post")]
 	[ApiVersion("1.0")]
@@ -46,6 +45,7 @@ namespace Blog.API.Controllers
 		}
 
 		[HttpPost]
+		[Authorize(Roles = "Admin")]
 		[ProducesResponseType(typeof(ApiResponse<PostDTO>), StatusCodes.Status201Created)]
 		[ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
 		public async Task<IActionResult> Create(PostCreateDTO dto)
@@ -55,6 +55,7 @@ namespace Blog.API.Controllers
 		}
 
 		[HttpPut("{id:int}")]
+		[Authorize(Roles = "Admin")]
 		[ProducesResponseType(typeof(ApiResponse<PostDTO>), StatusCodes.Status200OK)]
 		[ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
 		public async Task<IActionResult> Update(int id, PostUpdateDTO dto)
@@ -67,6 +68,7 @@ namespace Blog.API.Controllers
 		}
 
 		[HttpDelete("{id:int}")]
+		[Authorize(Roles = "Admin")]
 		[ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status204NoContent)]
 		[ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
 		public async Task<IActionResult> Delete(int id)

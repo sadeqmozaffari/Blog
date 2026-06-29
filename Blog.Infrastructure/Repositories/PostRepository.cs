@@ -4,7 +4,7 @@ using Blog.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 namespace Blog.Infrastructure.Repositories
 {
-	
+
 
 	public class PostRepository : Repository<Post>, IPostRepository
 	{
@@ -24,14 +24,14 @@ namespace Blog.Infrastructure.Repositories
 
 		public async Task<List<Post>> GetByCategoryIdAsync(int categoryId)
 		{
-			return await _context.Posts.Include(C=>C.Category)
+			return await _context.Posts.Include(C => C.Category)
 				.Where(x => x.CategoryId == categoryId)
 				.ToListAsync();
 		}
 
 		public async Task<List<Post>> GetLatestAsync(int count)
 		{
-			return await _context.Posts.Include(C=>C.Category)
+			return await _context.Posts.Include(C => C.Category)
 				.OrderByDescending(x => x.CreatedDate)
 				.Take(count)
 				.ToListAsync();

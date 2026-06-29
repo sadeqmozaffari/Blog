@@ -1,6 +1,5 @@
 ﻿using Blog.Common;
 using Blog.Common.DTOs.Category;
-using Blog.Common.DTOs.Post;
 using Blog.MVC.Services.IServices;
 
 namespace Blog.MVC.Services
@@ -9,8 +8,8 @@ namespace Blog.MVC.Services
 	{
 
 		private const string APIEndpoint = "/api/v2/category";
-		public CategoryService(IHttpClientFactory httpClient, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
-			: base(httpClient, httpContextAccessor)
+		public CategoryService(IHttpClientFactory httpClient, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, ITokenProvider tokenProvider)
+			: base(httpClient, tokenProvider, httpContextAccessor)
 		{
 		}
 

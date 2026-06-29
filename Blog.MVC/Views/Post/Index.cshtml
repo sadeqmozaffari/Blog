@@ -1,4 +1,5 @@
-﻿@using Blog.Common.DTOs.Post
+﻿@using Blog.Common
+@using Blog.Common.DTOs.Post
 @model IEnumerable<PostDTO>
 
 <div class="container my-4 pb-4">
@@ -6,9 +7,9 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1">Post Management</h2>
-            <p class="text-muted mb-0">Manage your Post listings</p>
+            <p class="text-muted mb-0">Manage your blog posts</p>
         </div>
-        <a asp-controller="Post" asp-action="create" class="btn btn-success">
+        <a asp-controller="Post" asp-action="Create" class="btn btn-success">
             <i class="bi bi-plus-circle me-2"></i>Add New Post
         </a>
     </div>
@@ -29,13 +30,13 @@
         </div>
     }
 
-    @if (Model == null || !Model.Any())
+     @if (Model == null || !Model.Any())
     {
         <div class="alert alert-info text-center">
             <i class="bi bi-info-circle fs-1 d-block mb-3"></i>
-            <h5>No Villas Available</h5>
-            <p class="mb-3">Get started by creating your first Post.</p>
-            <a href="#" class="btn btn-primary">
+            <h5>No Posts Available</h5>
+            <p class="mb-3">Get started by creating your first post.</p>
+            <a asp-controller="Post" asp-action="Create" class="btn btn-primary">
                 <i class="bi bi-plus-circle me-2"></i>Create Post
             </a>
         </div>
@@ -51,21 +52,20 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Image</th>
-                                    <th>Name</th>
+                                    <th>Title</th>
                                     <th>Category</th>
-                                    <th>Details</th>
-
+                                    <th>Description</th>
                                     <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var Post in Model)
+                                @foreach (var post in Model)
                                 {
                                     <tr>
                                         <td>
-                                            @if (!string.IsNullOrEmpty(Post.ImageUrl))
+                                            @if (!string.IsNullOrEmpty(post.ImageUrl))
                                             {
-                                                <img src="@Post.ImageUrl" class="rounded" style="width: 60px; height: 45px; object-fit: cover;">
+                                                <img src="@SD.GetImageUrl(post.ImageUrl)" class="rounded" style="width: 60px; height: 45px; object-fit: cover;">
                                             }
                                             else
                                             {
@@ -76,33 +76,33 @@
                                             }
                                         </td>
                                         <td class="align-middle">
-                                            <strong>@Post.Title</strong>
+                                            <strong>@post.Title</strong>
                                         </td>
                                         <td class="align-middle">
-                                            <strong>@Post.CategoryName</strong>
+                                            @(string.IsNullOrWhiteSpace(post.CategoryName) ? "Uncategorized" : post.CategoryName)
                                         </td>
                                         <td class="align-middle">
                                             <small class="text-muted">
-                                                @if (string.IsNullOrEmpty(Post.Description))
+                                                @if (string.IsNullOrEmpty(post.Description))
                                                 {
-                                                    <span class="fst-italic">No details</span>
+                                                    <span class="fst-italic">No Description</span>
                                                 }
                                                 else
                                                 {
-                                                    @(Post.Description.Length > 50 ? Post.Description.Substring(0, 50) + "..." : Post.Description)
+                                                    @(post.Description.Length > 50 ? post.Description.Substring(0, 50) + "..." : post.Description)
                                                 }
                                             </small>
                                         </td>
-                                 
+                                     
 
                                         <td class="align-middle text-center">
                                             <div class="btn-group btn-group-sm">
 
-                                                <a asp-action="edit" asp-route-id="@Post.Id"
+                                                <a asp-action="Edit" asp-route-id="@post.Id"
                                                    class="btn btn-outline-warning" title="Edit">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
-                                                <a asp-action="delete" asp-route-id="@Post.Id"
+                                                <a asp-action="Delete" asp-route-id="@post.Id"
                                                    class="btn btn-outline-danger" title="Delete">
                                                     <i class="bi bi-trash"></i>
                                                 </a>
@@ -121,24 +121,24 @@
             <div class="col-12">
                 <div class="card shadow-lg border-0 stats-card">
                     <div class="card-body p-4">
-                        <h3 class="text-center mb-4 fw-bold">Summary</h3>
+                        <h3 class="text-center mb-4 fw-bold">At a Glance</h3>
                         <div class="row text-center g-4">
                             <div class="col-md-12">
                                 <div class="stat-item">
-                                    <i class="bi bi-house-heart-fill text-primary fs-1 mb-3"></i>
+                                    <i class="bi bi-journal-text text-primary fs-1 mb-3"></i>
                                     <h3 class="text-primary fw-bold mb-1">@Model.Count()</h3>
-                                    <p class="text-muted mb-0">Total Villas</p>
+                                    <p class="text-muted mb-0">Total Posts</p>
                                 </div>
                             </div>
-                  
+                        
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
+      
     }
-
+    
 </div>
 
 <style>

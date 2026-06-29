@@ -15,7 +15,6 @@ using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
@@ -23,10 +22,39 @@ using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-var key = Encoding.ASCII.GetBytes(builder.Configuration.GetSection("JwtSettings")["Secret"]);
+var jwtSecret = builder.Configuration["JwtSettings:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+	throw new InvalidOperationException("JwtSettings:Secret is not configured.");
+
+if (jwtSecret.Length < 32)
+	throw new InvalidOperationException("JwtSettings:Secret must be at least 32 characters.");
+
+var key = Encoding.UTF8.GetBytes(jwtSecret);
 
 builder.Services.AddCors();
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Add services to the container.
+builder.Services.AddDbContext<ApplicationDbContext>(option =>
+{
+	option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+builder.Services
+	.AddIdentity<ApplicationUser, IdentityRole>(options =>
+	{
+		options.User.RequireUniqueEmail = true;
+		options.Password.RequiredLength = 8;
+		options.Password.RequireDigit = true;
+		options.Password.RequireLowercase = true;
+		options.Password.RequireUppercase = true;
+		options.Password.RequireNonAlphanumeric = true;
+		options.Lockout.AllowedForNewUsers = true;
+		options.Lockout.MaxFailedAccessAttempts = 5;
+		options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+	})
+	.AddEntityFrameworkStores<ApplicationDbContext>()
+	.AddDefaultTokenProviders();
+
 builder.Services.AddAuthentication(option =>
 {
 	option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -40,21 +68,16 @@ builder.Services.AddAuthentication(option =>
 	{
 		ValidateIssuerSigningKey = true,
 		IssuerSigningKey = new SymmetricSecurityKey(key),
-		ValidateIssuer = false,
-		ValidateAudience = false,
+		ValidateIssuer = !string.IsNullOrWhiteSpace(builder.Configuration["JwtSettings:Issuer"]),
+		ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+		ValidateAudience = !string.IsNullOrWhiteSpace(builder.Configuration["JwtSettings:Audience"]),
+		ValidAudience = builder.Configuration["JwtSettings:Audience"],
 		ValidateLifetime = true,
 		ClockSkew = TimeSpan.Zero,
 		NameClaimType = ClaimTypes.Name,
 		RoleClaimType = ClaimTypes.Role,
 	};
 
-});
-
-
-// Add services to the container.
-builder.Services.AddDbContext<ApplicationDbContext>(option =>
-{
-	option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 builder.Services.AddControllers();
 builder.Services.AddApiVersioning(options =>
@@ -68,12 +91,9 @@ builder.Services.AddApiVersioning(options =>
 	option.SubstituteApiVersionInUrl = true;
 });
 
-var builderProvider = builder.Services.BuildServiceProvider().GetRequiredService<IApiVersionDescriptionProvider>();
-foreach (var description in builderProvider.ApiVersionDescriptions)
+foreach (var versionName in new[] { "v1", "v2" })
 {
-	var versionName = description.GroupName;
-	var versionNumber = description.ApiVersion.ToString();
-	var displayName = $"Demo API -- {versionNumber}";
+	var displayName = $"Demo API -- {versionName}";
 
 	builder.Services.AddOpenApi(versionName, options =>
 	{
@@ -134,10 +154,11 @@ foreach (var description in builderProvider.ApiVersionDescriptions)
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPostRepository, PostRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<IImageService>(sp =>
 {
@@ -177,7 +198,18 @@ if (app.Environment.IsDevelopment())
 	});
 }
 app.UseStaticFiles();
-app.UseCors(o => o.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("*"));
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+app.UseCors(o =>
+{
+	o.AllowAnyHeader()
+		.AllowAnyMethod()
+		.WithExposedHeaders("*");
+
+	if (allowedOrigins.Length > 0)
+		o.WithOrigins(allowedOrigins);
+	else if (app.Environment.IsDevelopment())
+		o.AllowAnyOrigin();
+});
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -2,12 +2,12 @@
 
 namespace Blog.Common.DTOs.Post
 {
-    public class PostDTO
-    {
-        public int Id { get; set; }
-        public required string Title { get; set; }
-        public string? Description { get; set; }
-        public string? ImageUrl { get; set; }
+	public class PostDTO
+	{
+		public int Id { get; set; }
+		public required string Title { get; set; }
+		public string? Description { get; set; }
+		public string? ImageUrl { get; set; }
 
 		[Required]
 		public int CategoryId { get; set; }

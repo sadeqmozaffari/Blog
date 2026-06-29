@@ -1,7 +1,5 @@
 ﻿using Blog.Common;
 using Blog.Common.DTOs.Category;
-using Blog.Domain.Entities;
-using Blog.Domain.Repositories;
 using Blog.Domain.UnitOfWork;
 using Mapster;
 using MapsterMapper;

@@ -10,7 +10,6 @@ namespace Blog.Infrastructure.UnitOfWork
 	{
 		private readonly ApplicationDbContext _context;
 
-		public IUserRepository Users { get; }
 		public ICategoryRepository Categories { get; }
 		public IPostRepository Posts { get; }
 
@@ -18,7 +17,6 @@ namespace Blog.Infrastructure.UnitOfWork
 		{
 			_context = context;
 
-			Users = new UserRepository(context);
 			Categories = new CategoryRepository(context);
 			Posts = new PostRepository(context);
 		}

@@ -2,13 +2,16 @@
 
 namespace Blog.Common.DTOs.Authentication
 {
-    public class LoginRequestDTO
-    {
-        [Required]
-        [EmailAddress]
-        public required string Email { get; set; }
+	public class LoginRequestDTO
+	{
+		[Required]
+		[EmailAddress]
+		[MaxLength(200)]
+		public required string Email { get; set; }
 
-        [Required]
-        public required string Password { get; set; }
-    }
+		[Required]
+		[MinLength(6)]
+		[MaxLength(100)]
+		public required string Password { get; set; }
+	}
 }

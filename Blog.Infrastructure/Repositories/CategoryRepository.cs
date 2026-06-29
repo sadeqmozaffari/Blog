@@ -4,7 +4,7 @@ using Blog.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 namespace Blog.Infrastructure.Repositories
 {
-	
+
 
 	public class CategoryRepository : Repository<Category>, ICategoryRepository
 	{

@@ -2,10 +2,12 @@
 using Blog.Application.Services.Category;
 using Blog.Common;
 using Blog.Common.DTOs.Category;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Blog.API.Controllers
+namespace Blog.API.Controllers.v1
 {
+	[Authorize]
 	[ApiController]
 	[Route("api/v{version:apiVersion}/category")]
 	[ApiVersion("1.0")]

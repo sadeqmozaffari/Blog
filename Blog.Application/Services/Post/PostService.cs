@@ -1,9 +1,7 @@
 ﻿using Blog.Application.Services.Image;
 using Blog.Common;
 using Blog.Common.DTOs.Post;
-using Blog.Domain.Entities;
 using Blog.Domain.UnitOfWork;
-using Mapster;
 using MapsterMapper;
 
 namespace Blog.Application.Services.Post
@@ -64,7 +62,7 @@ namespace Blog.Application.Services.Post
 			if (category == null)
 				return ApiResponse<PostDTO>.NotFound("Category not found");
 
-			string imageUrl = null;
+			string? imageUrl = null;
 
 			if (dto.ImageFile != null)
 			{

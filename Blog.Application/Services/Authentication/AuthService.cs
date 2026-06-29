@@ -1,104 +1,202 @@
-﻿using Blog.Common;
+using Blog.Common;
 using Blog.Common.DTOs.Authentication;
 using Blog.Common.DTOs.User;
 using Blog.Domain.Entities;
-using Blog.Domain.Repositories;
-using Mapster;
-using MapsterMapper;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+using Microsoft.AspNetCore.Identity;
 
 namespace Blog.Application.Services.Authentication
 {
-	
-
 	public class AuthService : IAuthService
 	{
-		private readonly IUserRepository _userRepository;
-		private readonly IMapper _mapper;
-		private readonly IConfiguration _configuration;
+		private const string DefaultRole = "User";
+		private static readonly HashSet<string> AllowedRoles = new(StringComparer.OrdinalIgnoreCase)
+		{
+			"User",
+			"Admin"
+		};
+
+		private readonly UserManager<ApplicationUser> _userManager;
+		private readonly SignInManager<ApplicationUser> _signInManager;
+		private readonly RoleManager<IdentityRole> _roleManager;
+		private readonly ITokenService _tokenService;
 
 		public AuthService(
-			IUserRepository userRepository,
-			IMapper mapper,
-			IConfiguration configuration)
+			UserManager<ApplicationUser> userManager,
+			SignInManager<ApplicationUser> signInManager,
+			RoleManager<IdentityRole> roleManager,
+			ITokenService tokenService)
 		{
-			_userRepository = userRepository;
-			_mapper = mapper;
-			_configuration = configuration;
+			_userManager = userManager;
+			_signInManager = signInManager;
+			_roleManager = roleManager;
+			_tokenService = tokenService;
 		}
 
 		public async Task<ApiResponse<bool>> IsEmailExistsAsync(string email)
 		{
-			var exists = await _userRepository.GetByEmailAsync(email) != null;
+			if (string.IsNullOrWhiteSpace(email))
+				return ApiResponse<bool>.BadRequest("Email is required.");
 
-			return ApiResponse<bool>.Ok(exists, "Checked successfully");
+			var exists = await _userManager.FindByEmailAsync(NormalizeEmail(email)) != null;
+			return ApiResponse<bool>.Ok(exists);
 		}
 
 		public async Task<ApiResponse<UserDTO>> RegisterAsync(UserCreateDTO dto)
 		{
-			var exists = await _userRepository.GetByEmailAsync(dto.Email);
+			var email = NormalizeEmail(dto.Email);
+			var name = dto.Name.Trim();
+			var role = GetRequestedRole(dto.Role);
 
-			if (exists != null)
-				return ApiResponse<UserDTO>.Conflict("Email already exists");
+			if (await _userManager.FindByEmailAsync(email) != null)
+				return ApiResponse<UserDTO>.Conflict("Email already exists.");
 
-			var user = dto.Adapt<User>();
+			await EnsureRoleAsync(role);
 
-			user.CreatedDate = DateTime.UtcNow;
-			user.Role ??= "User";
+			var user = new ApplicationUser
+			{
+				UserName = email,
+				Email = email,
+				Name = name,
+				EmailConfirmed = false,
+				CreatedDate = DateTime.UtcNow
+			};
 
-			await _userRepository.AddAsync(user);
-			await _userRepository.SaveAsync();
+			var createResult = await _userManager.CreateAsync(user, dto.Password);
+			if (!createResult.Succeeded)
+				return ApiResponse<UserDTO>.ValidationError(ToIdentityErrors(createResult), "Registration failed.");
 
-			var result = _mapper.Map<UserDTO>(user);
+			var roleResult = await _userManager.AddToRoleAsync(user, role);
+			if (!roleResult.Succeeded)
+				return ApiResponse<UserDTO>.ValidationError(ToIdentityErrors(roleResult), "User role assignment failed.");
 
-			return ApiResponse<UserDTO>.CreatedAt(result, "User registered successfully");
+			return ApiResponse<UserDTO>.Created(
+				await MapUserAsync(user),
+				"User registered successfully");
 		}
 
 		public async Task<ApiResponse<LoginResponseDTO>> LoginAsync(LoginRequestDTO dto)
 		{
-			var user = await _userRepository.GetByEmailAsync(dto.Email);
+			var email = NormalizeEmail(dto.Email);
+			var user = await _userManager.FindByEmailAsync(email);
 
-			if (user == null || user.Password != dto.Password)
-				return ApiResponse<LoginResponseDTO>.NotFound("Invalid email or password");
+			if (user == null)
+				return ApiResponse<LoginResponseDTO>.Unauthorized("Invalid email or password.");
 
-			var token = GenerateJwtToken(user);
+			if (await _userManager.IsLockedOutAsync(user))
+				return ApiResponse<LoginResponseDTO>.Forbidden("User account is locked.");
+
+			var signInResult = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: true);
+			if (!signInResult.Succeeded)
+				return ApiResponse<LoginResponseDTO>.Unauthorized("Invalid email or password.");
+
+			var accessToken = await _tokenService.GenerateJwtTokenAsync(user);
+			var refreshToken = await _tokenService.GenerateRefreshTokenAsync();
+			var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(_tokenService.GetRefreshTokenDays());
+
+			await _tokenService.SaveRefreshTokenAsync(
+				user.Id,
+				refreshToken,
+				refreshTokenExpiresAt);
 
 			var response = new LoginResponseDTO
 			{
-				UserDTO = _mapper.Map<UserDTO>(user),
-				Token = token
+				UserDTO = await MapUserAsync(user),
+				AccessToken = accessToken.Token,
+				Token = accessToken.Token,
+				RefreshToken = refreshToken,
+				ExpiresAt = accessToken.ExpiresAt
 			};
 
-			return ApiResponse<LoginResponseDTO>.Ok(response, "Login successful");
+			return ApiResponse<LoginResponseDTO>.Ok(response, "Login successful.");
 		}
 
-		private string GenerateJwtToken(User user)
+		public async Task<ApiResponse<TokenDTO>> RefreshTokenAsync(string refreshToken)
 		{
-			var key = Encoding.UTF8.GetBytes(_configuration["JwtSettings:Secret"]!);
+			if (string.IsNullOrWhiteSpace(refreshToken))
+				return ApiResponse<TokenDTO>.BadRequest("Refresh token is required.");
 
-			var tokenDescriptor = new SecurityTokenDescriptor
+			var token = await _tokenService.ValidateRefreshTokenAsync(refreshToken);
+
+			if (token == null)
+				return ApiResponse<TokenDTO>.Unauthorized("Invalid refresh token.");
+
+			var user = await _userManager.FindByIdAsync(token.UserId);
+
+			if (user == null)
+				return ApiResponse<TokenDTO>.Unauthorized("User not found.");
+
+			await _tokenService.RevokeRefreshTokenAsync(refreshToken);
+
+			var accessToken = await _tokenService.GenerateJwtTokenAsync(user);
+			var newRefreshToken = await _tokenService.GenerateRefreshTokenAsync();
+			var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(_tokenService.GetRefreshTokenDays());
+
+			await _tokenService.SaveRefreshTokenAsync(
+				user.Id,
+				newRefreshToken,
+				refreshTokenExpiresAt,
+				token.JwtTokenId);
+
+			return ApiResponse<TokenDTO>.Ok(new TokenDTO
 			{
-				Subject = new ClaimsIdentity(new[]
-				{
-				new Claim(ClaimTypes.NameIdentifier,user.Id.ToString()),
-				new Claim(ClaimTypes.Email,user.Email),
-				new Claim(ClaimTypes.Name,user.Name),
-				new Claim(ClaimTypes.Role,user.Role)
-			}),
-				Expires = DateTime.UtcNow.AddDays(7),
-				SigningCredentials = new SigningCredentials(
-					new SymmetricSecurityKey(key),
-					SecurityAlgorithms.HmacSha256Signature)
+				AccessToken = accessToken.Token,
+				RefreshToken = newRefreshToken,
+				ExpiresAt = accessToken.ExpiresAt
+			});
+		}
+
+		public async Task<ApiResponse<object>> RevokeRefreshTokenAsync(string refreshToken)
+		{
+			if (string.IsNullOrWhiteSpace(refreshToken))
+				return ApiResponse<object>.BadRequest("Refresh token is required.");
+
+			var revoked = await _tokenService.RevokeRefreshTokenAsync(refreshToken);
+			if (!revoked)
+				return ApiResponse<object>.NotFound("Refresh token not found.");
+
+			return ApiResponse<object>.Ok(new object(), "Refresh token revoked successfully.");
+		}
+
+		private async Task<UserDTO> MapUserAsync(ApplicationUser user)
+		{
+			var roles = await _userManager.GetRolesAsync(user);
+
+			return new UserDTO
+			{
+				Id = user.Id,
+				Email = user.Email ?? string.Empty,
+				Name = user.Name,
+				Role = roles.FirstOrDefault() ?? DefaultRole
 			};
+		}
 
-			var tokenHandler = new JwtSecurityTokenHandler();
-			var token = tokenHandler.CreateToken(tokenDescriptor);
+		private async Task EnsureRoleAsync(string role)
+		{
+			if (!await _roleManager.RoleExistsAsync(role))
+				await _roleManager.CreateAsync(new IdentityRole(role));
+		}
 
-			return tokenHandler.WriteToken(token);
+		private static string GetRequestedRole(string? role)
+		{
+			if (string.IsNullOrWhiteSpace(role))
+				return DefaultRole;
+
+			var normalizedRole = role.Trim();
+			return AllowedRoles.Contains(normalizedRole) ? normalizedRole : DefaultRole;
+		}
+
+		private static string NormalizeEmail(string email)
+		{
+			return email.Trim().ToLowerInvariant();
+		}
+
+		private static Dictionary<string, string[]> ToIdentityErrors(IdentityResult result)
+		{
+			return result.Errors
+				.GroupBy(error => error.Code)
+				.ToDictionary(
+					group => group.Key,
+					group => group.Select(error => error.Description).ToArray());
 		}
 	}
 }

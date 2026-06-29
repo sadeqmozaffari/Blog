@@ -1,3 +1,4 @@
+using Blog.Common;
 using Blog.MVC;
 using Blog.MVC.Services;
 using Blog.MVC.Services.IServices;
@@ -28,13 +29,16 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 		options.LoginPath = "/auth/login";
 		options.AccessDeniedPath = "/auth/accessdenied";
 	});
+
+SD.APIBaseUrl = builder.Configuration.GetValue<string>("ServiceUrls:BlogAPI")
+	?? throw new InvalidOperationException("ServiceUrls:BlogAPI is not configured.");
 builder.Services.AddHttpClient("BlogAPI", client =>
 {
-	var blogAPIUrl = builder.Configuration.GetValue<string>("ServiceUrls:BlogAPI");
+	var blogAPIUrl = SD.APIBaseUrl;
 	client.BaseAddress = new Uri(blogAPIUrl);
 	client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
-
+builder.Services.AddScoped<ITokenProvider, TokenProvider>();
 builder.Services.AddScoped<IBaseService, BaseService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
